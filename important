@@ -56,3 +56,12 @@ https://youtu.be/ftTjxztcT14
 Upload Artifact to Nexus using Jenkins Pipeline | Jenkins Nexus Artifact Uploader Example|Jenkins CI - YouTube
 ================================================================Get 85% OFF on All Udemy Courses : https://bit.ly/2XAJBdcRefer Code For $100 Free DigitalOcea...
 
+Adding Nexus to Spinnaker 
+
+
+hal config provider docker-registry account add my-docker-registry \
+    --address <pvtIP>:9082 \
+    --repositories repository/<repoName> \
+    --insecure-registry true \
+    --username <userName> \
+    --password
