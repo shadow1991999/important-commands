@@ -1,0 +1,58 @@
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+
+
+$ sudo systemctl stop kubelet
+$ sudo systemctl start kubelet
+$ strace -eopenat kubectl version
+$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+
+ to set config context
+
+kubectl config set-context $(kubectl config current-context) 
+
+
+go give external IP to kubernetes service 
+ kubectl patch svc backend -p '{"spec":{"externalIPs":["192.168.0.194"]}}'
+ 
+ 
+ 
+ [10/19 8:36 PM] Ravi Sharma
+Main uses of lambda 
+
+[10/19 8:37 PM] Ravi Sharma
+Main uses of AWS lambda
+https://beabetterdev.com/2021/07/15/what-can-you-do-with-aws-lambda/
+
+
+[10/28 10:56 PM] Ravi Sharma
+Commands to remove nexussudo systemctl stop nexussudo rm /etc/systemd/system/nexus.servicesudo systemctl disable nexususerdel -r nexusafter that just remove the folder where it is install(/opt/nexus)
+
+[10/31 3:12 PM] Ravi Sharma
+to see list of installed java versions in your system
+update-java-alternatives --list
+
+to configure one version among available versions  E.g - you have two different software's and both of them require different versions of java to work
+
+sudo update-alternatives --config java
+
+
+To completely remove jdk from your system, follow these below steps:
+
+    Type sudo apt-get autoremove default-jdk openjdk- (Don't hit Enter right now).
+    Now press tab button for 2 or 3 times, you will get list of packages starting with openjdk-.
+    Look for name like openjdk-11-jdk. You need to get java version, here is 11.
+    Now complete your command to sudo apt-get autoremove default-jdk openjdk-11-jdk. (Change 11 to your java version)
+    And Hit Enter button.
+
+Now you have done removing java from your system.
+
+
+
+
+
+[6:56 PM] Ravi Sharma
+https://youtu.be/ftTjxztcT14
+Upload Artifact to Nexus using Jenkins Pipeline | Jenkins Nexus Artifact Uploader Example|Jenkins CI - YouTube
+================================================================Get 85% OFF on All Udemy Courses : https://bit.ly/2XAJBdcRefer Code For $100 Free DigitalOcea...
+
