@@ -1,0 +1,3 @@
+  hal config provider docker-registry account add my-docker-registry1     --address http://35.78.220.98:32000/repository/ravi/    --insecure-registry true     --username admin     --password
+
+hal config provider docker-registry account add my-docker-registry     --address http://35.78.220.98:32000/repository/ravi:v2     --insecure-registry true     --username admin     --password
