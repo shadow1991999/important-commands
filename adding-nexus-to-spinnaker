@@ -1,0 +1,8 @@
+
+
+
+hal config repository nexus enable
+
+
+
+hal config repository nexus search add nexus --base-url http://35.78.220.98:32000 --username admin --password admin --repo reponame
