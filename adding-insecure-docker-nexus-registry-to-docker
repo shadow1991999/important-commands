@@ -1,0 +1,16 @@
+
+
+    Edit the daemon.json file, whose default location is /etc/docker/daemon.json on Linux or C:\ProgramData\docker\config\daemon.json on Windows Server
+
+        If the daemon.json file does not exist, create it.
+
+    {
+          "insecure-registries": ["ip:portno", "anotherregistry:5000"]
+    }
+
+    Restart Docker for the changes to take effect. In Ubuntu would be like this:
+
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+
+Find more details in official documentation page https://docs.docker.com/registry/insecure/
