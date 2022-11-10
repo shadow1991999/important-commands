@@ -14,3 +14,13 @@
     $ sudo systemctl restart docker
 
 Find more details in official documentation page https://docs.docker.com/registry/insecure/
+
+
+docker tag <imageId or imageName> <nexus-hostname>:<repository-port>/<image>:<tag>
+docker tag af340544ed62 nexus.example.com:18444/hello-world:mytag
+
+
+sudo docker login http://ip:dockerrepo-port/repository/ravi/
+sudo docker login -u username -p password ip:repoport
+
+docker push <nexus-hostname>:<repository-port>/<image>:<tag>
