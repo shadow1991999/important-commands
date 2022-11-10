@@ -1,0 +1,42 @@
+1. Add Artifactory Search to Spinnaker
+
+a. Enable the Artifactory repository:
+
+$ hal config repository artifactory enable
+
+b. Add a search for your repository:
+
+$ hal config repository artifactory search add spring-artifactory --base-url https://my.repo.example.com \
+      --repo my-example-repo --groupId com.example.mygroup --username example --password mypassword
+
+2. Add Maven Account to Spinnaker
+
+a. Enable the Maven artifact provider:
+
+$ hal config artifact maven enable
+
+b. Add an artifact account for Maven:
+
+$ hal config artifact maven account add spring-artifactory-maven --repository-url https://my.repo.example.com
+
+3. Add GitHub Account to Spinnaker
+
+See the documentation about how to Configure a GitHub artifact account .
+
+a. After generating an access token with the repo scope, store that token in a token file (TOKEN_FILE).
+
+$ TOKEN_FILE=<Insert Path to Token File>
+
+b. Enable the GitHub artifact provider:
+
+$ hal config artifact github enable
+
+c. Add an artifact account (GITHUB_ACCOUNT) for GitHub:
+
+$ GITHUB_ACCOUNT=<Insert GitHub Account Name>
+$ hal config artifact github account add $GITHUB_ACCOUNT \
+  --token-file $TOKEN_FILE
+
+d. Apply your changes:
+
+$ hal deploy apply
