@@ -1,0 +1,1 @@
+hal config provider docker-registry account add my-docker-registry3     --address https://index.docker.io     --repositories ravis2470/apache     --insecure-registry=true --username ravis2470 --password
