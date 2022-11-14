@@ -1,0 +1,8 @@
+to generate base 64 secret 
+
+base64 pathoffile
+
+example :   base64 /home/ubuntu/.docker/config.json
+
+
+https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
