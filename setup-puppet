@@ -38,6 +38,29 @@ sudo apt-get install puppetserver -y
 
 sudo ufw allow 8140 
 
+
+
+ 
+
+Now go to  
+
+ 
+
+sudo nano /etc/default/puppetserver 
+
+ 
+
+And change the JAVA_ARGS=”Xms2g   -Xmx2g To 
+
+JAVA_ARGS=”Xms512m   -Xmx512m  
+
+ 
+
+As we are assigning 512mb ram rather than 2GB 
+
+ 
+
+
 sudo systemctl enable puppetserver.service 
 
  
