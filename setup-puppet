@@ -175,7 +175,7 @@ apply the changes in puppet agent by executing below command:
 
  
 
-sudo /opt/puppetlabs/bin/puppet agent –test 
+sudo /opt/puppetlabs/bin/puppet agent --test 
 
  
 
