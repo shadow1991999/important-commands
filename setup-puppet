@@ -1,0 +1,177 @@
+a) One Ubuntu instance for Puppet Master - this instance should have 4 GB RAM, in AWS instance type should be at least t2.medium. Master ubuntu EC2 should have a security group to ensure that below ports are open in security firewall 
+
+        * TCP 8140 - Agents will talk to the master on this port(puppet enterprise) 
+
+  * TCP 22 - To login to the server/instance using SSH 
+
+b) one Ubuntu instance as node which will have agent installed - This can be micro instance. 
+
+ 
+
+1 Steps for Puppet Master: 
+
+Modify Puppet Master Hosts file to add hostname of Puppet Master 
+
+sudo vi /etc/hosts 
+
+ 
+
+ 
+
+(Add puppet master privtae ip address and  write puppet next to it) 
+
+ 
+
+Download Puppet Master installation packages 
+
+curl -O https://apt.puppetlabs.com/puppet6-release-bionic.deb 
+
+sudo dpkg -i puppet6-release-bionic.deb  
+
+sudo apt-get update 
+
+ 
+
+Install Puppet Master 
+
+sudo apt-get install puppetserver -y 
+
+sudo ufw allow 8140 
+
+sudo systemctl enable puppetserver.service 
+
+ 
+
+sudo systemctl start puppetserver.service    
+
+sudo systemctl status puppetserver.service 
+
+apt policy puppetserver 
+
+ 
+
+2 - Steps for Puppet Agent 
+
+Step 2.1 First edit the hosts file on the puppet agent by modifying /etc/hosts 
+
+sudo vi /etc/hosts 
+
+# Please add Puppet Master server Private IP address and space and enter puppet 
+
+puppet_master_private-_ip_address   puppet 
+
+ 
+
+(please do not use public DNS name, use only private IP address)   
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Step 2.2 — Installing Puppet Agent on server node that Puppet master will manage 
+
+ 
+
+curl -O https://apt.puppetlabs.com/puppet6-release-bionic.deb 
+
+sudo dpkg -i puppet6-release-bionic.deb 
+
+sudo apt-get update 
+
+sudo apt-get install puppet-agent -y 
+
+sudo systemctl enable puppet 
+
+sudo systemctl restart puppet 
+
+sudo systemctl status puppet 
+
+ 
+
+Now press q to come out of window. 
+
+ 
+
+ 
+
+Step 3 - Signing certificates on Puppet Master 
+
+The first time you run the Puppet agent, it generates an SSL certificate and sends a signing request to the Puppet master. After the Puppet master signs the agent's certificate, it will be able to communicate  with and control the agent node. 
+
+First list the unsigned certificates on puppet master EC2 instance 
+
+sudo /opt/puppetlabs/server/bin/puppetserver ca list 
+
+ 
+
+The above command will list agent ip address. 
+
+  "your_puppet_Agent_Ec2_private_dns_name"  (SHA256) 46:19:79:3F:70:19:0A:FB:DA:3D:C8:74:47:EF:C8:B0:05:8A:06:50:2B:40:B3:B9:26:35:F6:96:17:85:5E:7C  
+
+Now sign the Puppet agent IP address. 
+
+sudo /opt/puppetlabs/server/bin/puppetserver ca sign --certname AgentEc2_private_dnsname 
+
+ 
+
+Step 4 - Verifying installation by creating Manifests in Puppet Master 
+
+The puppet manifest file is the actual file which contains the configuration details for the agents. This file is centrally stored at Puppet Master 
+
+ 
+
+sudo nano /etc/puppetlabs/code/environments/production/manifests/site.pp 
+
+ 
+
+#copy the below yellow lines in the above file 
+
+      file {'/tmp/puppet_test.txt':                        # resource type file and filename 
+    ensure  => present,                             # make sure it exists 
+    mode    => '0644',                              # file permissions 
+  content => "Hello from Puppet master to agent on ${ipaddress_eth0}!\n",  # Print the eth0 IP fact 
+    } 
+
+ 
+
+Press Ctrl O for saving and then enter 
+
+Press Ctrl X for exit after saving. 
+
+ 
+
+Step 5 - Apply Manifests in Puppet Agent 
+
+apply the changes in puppet agent by executing below command: 
+
+ 
+
+sudo /opt/puppetlabs/bin/puppet agent –test 
+
+ 
+
+You should see a file being modified in /tmp/puppet_works.txt in agent(node). 
+
+You can confirm by typing this command on puppet node  
+
+ 
+
+sudo cat /tmp/puppet_test.txt 
+
+Hello from Puppet master to agent on IP_address!! 
+
+That's it! you have set up Puppet Master and configured agent on the target node successfully! 
+
+ 
+
+ 
+
+ 
+
+ YouTube video link :- https://www.youtube.com/watch?v=ul5ON8jcG04 
