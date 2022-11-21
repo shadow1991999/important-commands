@@ -1,1 +1,122 @@
 https://bobcares.com/blog/add-ubuntu-host-to-nagios/
+
+
+
+Step 1: Install NRPE on Ubuntu
+
+Nagios only discovers and monitors the server on which it is installed by default ( localhost ). To monitor a remote host, the NRPE packages must first be installed on the remote host. As an example, we will utilize Ubuntu 20.04 as our remote host on our local network to add an ubuntu host to Nagios.
+
+So, first, log in to the remote computer and use the apt command to update the package index:
+
+$ sudo apt update
+
+Then, to install the Nagios plugins and NRPE agent, run the following command:
+
+$ sudo apt install nagios-plugins nagios-nrpe-server
+
+Once installed, use the following command to check the status of the NRPE agent:
+
+$ sudo systemctl status nagios-nrpe-server
+user@ubuntu-host:~$
+use2ubuntu-host:~$ sudo systemct1 status nagios-nrpe-server
+nagios-nrpe-server.service-Nagios Remote Plugin Executor
+Loaded:loaded (/lib/systemd/system/nagios-nrpe-server.service; enabled; vendor predent: enabled)
+Active: active (running) since Tsday 2022-08-25 14:15:46 UTC; 5min ago
+Docs: http://WWW.nagios.org/documentation
+Main PID: 581 (nrpe)
+Tasks: 1 (limiy: 4713)
+Memory: 1.0M
+CGroup: /system.s;ice/nagios-nrpe-server.service
+581 /usr/sbin/nrpe -c /etc/nagios/nrpe.cfg -f
+
+The above result confirms that the NRPE agent is operational.
+Step 2: Configure the NRPE agent
+
+Step 2 of adding ubuntu host to Nagios is to monitor the remote target, we must go one step further and modify the NRPE configuration file. So, open the /etc/nagios/nrpe.cfg configuration file.
+
+$ sudo vim /etc/nagios/nrpe.cfg
+
+Locate the server address parameter and set it to the Nagios host’s IP address. In this situation, the remote host’s private IP address is ‘10.128.15.202’.
+
+SERVER ADDRESS
+Address that nrpe should bind to in case there are more than one interface and you do not want nrpe to bind on all interfaces.
+NOTE: This option is ignored if NRPE is running under either ineta or xineta
+server_address=0.128.15.202
+
+Locate the allowed host’s argument, which is set to 127.0.0.1,0.0.0.0 by default. Change the second IP (0.0.0.0) to your Nagios server’s IP address. Our Nagios server’s private IP address is ‘10.128.15.204’.
+
+Note: The daemon only does rudimentary checking of the client's IP
+address. I would highly recommend adding entries in your /etc/hosts.allow file to allow only the specified host to connect to the port you are running this daemon on.
+NOTE: This option is ignored if NRPE is running under either inetd or xinetd allowed_hosts=27.0.0.110.128.15.20
+
+Save the modifications and then close the configuration file. Make sure to restart the NRPE agent daemon for the changes to take effect.
+
+$ sudo systemctl restart nagios-nrpe-server
+
+Run the following command on the remote host to determine the NRPE version:
+
+$ sudo /usr/sbin/nrpe -V /etc/nagios/nrpe.cfg -f
+Output:
+NRPE - Nagios Remote Plugin Executor
+Version: 4.0.0
+
+The check nrpe script, which is provided on the Nagios core server, can be used to validate the connection from the Nagios server to the remote. To validate the connection, run the check nrpe script included in the plugins directory, and type:
+
+$ sudo check_nrpe -H remote-host-ip-address
+Step 3: Add host to Nagios server
+
+We have completed the host-side setups for adding ubuntu host to Nagios. The only thing left is to configure the host on the Nagios monitoring server. But first, let’s make some changes to the Nagios configuration file.
+
+$ sudo vim /usr/local/nagios/etc/nagios.cfg
+
+Uncomment the line below to specify the path of the Nagios host configuration directory.
+
+cfg_dir=/usr/local/nagios/etc/servers
+
+We can also tell Nagios to process all config files (with a .cfg # extension) in a particular directory by using the cfg_dir # directive as shown below:
+
+cfg_dir= usr/local/nagios/etc/servers
+#cfg dir=/usr/local/nagios/etc/printers
+#cfg_dir=/usr/local/nagios/etc/switches
+#cfg_dir=/usr/local/nagios/etc/routers
+
+Then create the directory in the path that WE specified.
+
+$ sudo mkdir -p /usr/local/nagios/etc/servers
+
+And, in this case, generate the host’s configuration file, host.cfg.
+
+$ sudo vim /usr/local/nagios/etc/servers/host.cfg
+
+Copy and paste the following content. Replace the values for ‘use,’ ‘host name,’ ‘alias,’ and ‘address’ with those of the remote host to add ubuntu host to Nagios.
+
+define host {
+use linux-server
+host_name ubuntu-host
+alias Apache server
+address 10.128.15.202
+max_check_attempts 5
+check_period 24x7
+notification_interval 30
+notification_period 24x7
+}
+
+Finally, restart the Nagios service to apply the changes.
+
+$ sudo systemctl restart nagios
+Step 4: Configure the UFW firewall
+
+By default, the Nagios NRPE agent listens on port 5666. If we have the UFW firewall enabled, we must open this port on both the Nagios host and the server. To accomplish this, execute the following commands.
+
+$ sudo ufw allow 5666/tcp
+$ sudo ufw reload
+
+Then confirm that the port has been permitted.
+
+$ sudo ufw status
+
+add ubuntu host to nagios
+
+Finally, use the command: to confirm that all of the configurations are correct and this is the final step in adding the ubuntu host to nagios.
+
+$ sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
