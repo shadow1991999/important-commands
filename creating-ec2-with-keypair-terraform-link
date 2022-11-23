@@ -9,7 +9,7 @@ resource "aws_instance" "web" {
   ami           = "ami-00ee4df451840fa9d" #Amazon Linux AMI
   instance_type = "t2.micro"
   security_groups = [aws_security_group.TF_SG.name]
-  #first method
+  #first method is to create a key pait through AWS console (e.g "TF_key")and add it in configuration file.
   key_name = "TF_key"
   
 
@@ -18,7 +18,7 @@ resource "aws_instance" "web" {
   }
 }
 
-#keypair second method for Key_pair
+#keypair second method for Key_pair is to create it through terraform.
 
 resource "aws_key_pair" "TF_key" {
   key_name   = "TF_key"
