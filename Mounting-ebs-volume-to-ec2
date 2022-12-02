@@ -1,7 +1,30 @@
 lscpu  (for cpu specifications) 
+
+
 lsblk   (to display details about block devices  like hard disk)
 
  Check filesystem type of the disk or partition.
+ 
+$ sudo file -s diskname (to check the data on the volume or disk )
+e.g
+$ sudo file -s /dev/xvdf
+If the above command output shows “/dev/xvdf: data“, it means your volume is empty. 
+
+
+$ sudo mkfs -t (type you want the to be changed to)   nameofdisk
+E.g
+$ sudo mkfs -t ext4 /dev/xvdf (it will format the disk and change its type to ext4)
+
+Mount the volume to directory using the following command.
+$ sudo mount /dev/xvdf /directoryname you want volume to be mounted
+
+E.g 
+$ sudo mount /dev/xvdf /newvolume/
+
+
+Volume will we mounted to above directory.
+
+
 
 $ blkid diskname
 
@@ -30,10 +53,7 @@ To see the file systems that mkfs can create, type “mkfs” and then hit the T
 There's no space after “mkfs”, just hit Tab twice. 
 The list of available file systems is displayed in the terminal window.
 
-$ sudo file -s diskname (to check the data on the volume or disk )
-e.g
-$ sudo file -s /dev/xvdf
-If the above command output shows “/dev/xvdf: data“, it means your volume is empty.
+
 
 $ sudo mkfs -t (type you want the to be changed to)   nameofdisk
 E.g
