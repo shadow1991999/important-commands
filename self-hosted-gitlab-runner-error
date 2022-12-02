@@ -1,0 +1,8 @@
+    Process: 6174 ExecStart=/usr/bin/gitlab-runner run --working-directory /home/gitlab-runner --config /etc/gitlab-runner/config.toml --service gitlab-runner --user gitlab-runner (code=exited, status=1/FAILURE)
+      
+   
+   solution just 
+    Replace  volumes = ["/cache"]  with
+             volumes = ["/var/run/docker.sock:/var/run/docker.sock", "/cache"]
+    in /etc/gitlab-runner/config.toml file
+    
