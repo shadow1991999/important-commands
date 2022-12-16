@@ -1,0 +1,3 @@
+docker kill -s HUP nginx_containername
+
+docker exec nginx_container_name /usr/sbin/nginx -s reload  
