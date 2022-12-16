@@ -1,0 +1,393 @@
+
+Skip to content
+DEV Community 👩‍💻👨‍💻
+Log in
+Create account
+Cover image for Deploy your docker containers with zero-downtime
+Wassim Ben Jdida
+Wassim Ben Jdida
+
+Posted on Sep 9, 2021 • Updated on Nov 2, 2021
+Deploy your docker containers with zero-downtime
+#docker
+#cloud
+#devops
+
+I like using docker, everywhere, and especially docker-compose and its magic.
+Magic
+
+currently I'm working on an application, I will be deploying the app so soon, I searched the internet how to deploy an app using only my docker-compose file, but I only found docker swarm, nginx-porxy and other stuff that are not free.
+
+in this article I will explain how you can deploy your app with zero-downtime, using just your docker-compose file.
+Docker-compose setup
+
+This is the docker-compose file i will explain what's actully needs to be added to make the zero-downtime works.
+
+app/docker-compose.yml
+
+version: "3.6"
+
+services:
+  app_db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    container_name: pqdb
+    networks:
+      - db_nw
+
+  app_server:
+    build:
+      dockerfile: Dockerfile.server
+    ports: 
+      - "8989"
+    networks: 
+      - db_nw
+      - web_nw
+    restart: always
+    volumes:
+      - ../:/apps/go-app
+    depends_on:
+      - app_db  
+
+  app_nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    volumes:
+      - ./cfg/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 8888:80
+    networks:
+      - web_nw
+    depends_on: 
+      - app_server
+
+networks:
+  db_nw:
+    driver: bridge
+  web_nw:
+    driver: bridge
+
+i have 3 services, app_db, app_server and app_nginx. nothing fancy here. the most important piece here is not setting a container name nor port mapping ("1234:0987") on the app_server service i will tell you why later.
+
+but you are maybe wondering is the custom networks necessary for making this works ? short answer is No.
+
+let me explain docker networks first cause it has big role in making this works.
+Docker networks
+
+When you run your docker-compose file, docker connects your services to the same network which is the default network called bridge, and i think the name is self-explanatory, it creates a bridge between the services so they can communicate with each other, and the fun part is you don't need to know each container IP address, just use the service name and docker will handle the rest.
+img
+
+but Im creating custom networks so I can make sure that each service is talking with the service that it suppose to talk with.
+
+if you want to learn more about docker networks and you should do, read this article
+Nginx
+
+nginx is also an important service here, i will show you the config file and then explain.
+
+app/cfg/nginx.conf
+
+http {
+   server {
+      listen 80;
+      location / {
+         proxy_pass "http://app_server:8989";
+      }      
+   }
+}
+
+events {}
+
+this is the most basic nginx config on earth, we are creating a web server that listens on port 80 and pass requests to our app server.
+as you can see im using the service name here, docker will translate that to the proper container IP address.
+
+Now if you run your docker compose file you should be able to make requests to the web server which we mapped it to port 8888
+try
+
+curl http://localhost:8888
+But wait...
+
+yes, you want to know why i didn't put the container name and not mapping a port to the app_server service. right ?
+well, simply not setting them will let docker make the decision, it will create a name that is identical to the service name but suffixed with the container number/index.
+example, if you run your docker compose file and type
+
+docker ps
+
+you will see that the app_server container name is actually app_server_1.
+ok what about the port ? also not mapping a port to the service will let docker choose a dynamic port and map it to the port that we set on the service, each time you run the docker compose file the port will change.
+The fun part
+
+now we will make the zero-downtime deployment works. we will write a simple and small bash script, that will do the following:
+
+1) create a new app_server instance (with the new code changes)
+2) check if its up and running
+3) reload nginx (so it can recognize the new instance)
+4) delete the old instance (with the old code)
+
+let me show you the script and then I will explain how and why ?
+
+service_name=app_server
+nginx_container_name=nginx
+
+reload_nginx() {  
+  docker exec $nginx_container_name /usr/sbin/nginx -s reload  
+}
+
+# server health check
+server_status() {
+  # $1 = first func arg
+  local port=$1
+  local status=$(curl -is --connect-timeout 5 --show-error http://localhost:$port | head -n 1 | cut -d " " -f2)
+
+  # if status is not a status code (123), means we got an error not an http header
+  # this could be a timeout message, connection refused error msg, and so on...
+  if [[ $(echo ${#status}) != 3 ]]; then
+    echo "503"
+  fi
+
+  echo $status
+}
+
+update_server() {
+
+  old_container_id=$(docker ps -f name=$service_name -q | tail -n1)
+
+  # create a new instance of the server
+  docker-compose up --build -d --no-deps --scale $service_name=2 --no-recreate $service_name
+  new_container_id=$(docker ps -f name=$service_name -q | head -n1)
+
+  if [[ -z $new_container_id ]]; then
+    echo "ID NOT FOUND, QUIT !"
+    exit
+  fi
+  new_container_port=$(docker port $new_container_id | cut -d " " -f3 | cut -d ":" -f2)
+
+  if [[ -z $new_container_port ]]; then
+    echo "PORT NOT FOUND, QUIT !"
+    exit
+  fi
+
+  # sleep until server is up
+  while [[ $(server_status $new_container_port) > "404" ]]; do
+    echo "New instance is getting ready..."
+    sleep 3
+  done
+
+  # ---- server is up ---
+
+  # reload nginx, so it can recognize the new instance
+  reload_nginx
+
+  # remove old instance 
+  docker rm $old_container_id -f
+
+  # reload ngnix, so it stops routing requests to the old instance
+  reload_nginx
+
+  echo "DONE !"
+}
+
+# call func
+update_server
+
+we have 3 functions:
+1) reloading nginx
+actually reloading nginx doesn't cause any downtime
+
+3) checking the server health
+
+curl -is --connect-timeout 5 --show-error http://localhost:$port
+
+this will return the response headers, as we can see the first line is the http status code
+
+HTTP/1.1 200 OK
+Age: ...
+Cache-Control: ...
+Content-Type: ...
+...
+
+we want the first line
+
+head -n1
+
+split the text based on spaces and get the second field which is 200 in our example
+
+cut -d " " -f2
+
+3) update server
+in this function we get the current or the old server container id, then we create a new instance of the app_server service without touching other linked services,
+
+docker-compose up -d --no-deps --scale $service_name=2 --no-recreate $service_name
+
+then we get this new container id and port so we can check its status if its up so we can then stop the old container and start sending requests to the new container.
+Finally
+
+so how this will work ? how will i deploy my server and update it ?
+if you run the script on your machine, it should work on your server machine cause thats how docker works, right ?
+
+you can use scp (secure copy) to copy your code from your local machine to the server, and you can use the same command to update the code on the server
+
+scp USER@IP:~/apps ./local/app
+
+you should use docker-compose up first of all if its your first time your deploy code. and then run the update_server script to update your changes without any downtime.
+
+you can also use git which i prefer to deploy and update your server and use git hooks so whenever there is a git push to your server you run the update_server script
+
+read more how you can use git to deploy your code, as simple as git push.
+Resources
+
+Bash cheat sheet
+Docker cheat sheet
+Top comments (5)
+pic
+ 
+ciprian_42 profile image
+•
+May 20
+
+When running docker-compose up -d --no-deps --scale $service_name=2 --no-recreate $service_name, my newly created service exits, as the port "X" is already used by the first service, that I'm trying to scale up.
+
+In your case, how do you solve the port duplication issue? Thanks for a great tutorial!
+Reply
+ 
+wassimbj profile image
+•
+May 22
+
+Hello ciprian, what you should do is remove the manual port mapping you have on the docker-compose file, that will let docker generate a random port for you, just read the first part that talks about the docker compose configuration
+port
+"1234:9876"
+should become like this
+"1234"
+
+if it didn't work just rebuild the docker compose file
+Reply
+ 
+kweigold profile image
+•
+Jul 13
+
+Am trying to do this but nginix stops processing requests once docker rm happens and doesnt restart until after the nginx reload occurs. sometimes this can take a bit of time for the docker rm to stop and remove and any call in progress seems to hang until its own timeout occurs. Any ideas on why it would stop processing on the docker rm when their is already a 2nd docker image that should be handing requests running?
+Reply
+ 
+adityabraj profile image
+•
+Apr 25
+
+Hi Wassim. This solution will work with a single container deployment, but what if we are already using the docker-compose scale feature to deploy multiple containers, then how will the update_server() and the nginx conf turn out?
+Reply
+ 
+wassimbj profile image
+•
+May 22 • Edited on May 22
+
+I didnt try this, but what i think you can do is get the old containers as an array instead of just a variable, loop throught the array and re-do whats in the bash script, get the port foreach container duplicate it and shutdown the old one
+Reply
+Code of Conduct • Report abuse
+🌚 Browsing with dark mode makes you a better developer.
+
+It's a scientific fact.
+Read next
+marcuskohlberg profile image
+How to build a Go microservices backend in 5 minutes
+
+marcuskohlberg - Dec 12
+vikcodes profile image
+Remote Kubernetes jobs: How many are there? What do the trends suggest?
+
+vik-codes - Dec 7
+berviantoleo profile image
+.NET 7 + Docker
+
+Bervianto Leo Pratama - Dec 8
+neeljyedu profile image
+The evolution of DevOps
+
+Neel - Dec 6
+Wassim Ben Jdida
+Software Developer
+
+    Location
+    Tunisia
+    Work
+    Software Developer
+    Joined
+    Mar 25, 2019
+
+Trending on DEV Community 👩‍💻👨‍💻
+Mike Levan profile image
+Logging In Kubernetes
+#kubernetes #devops #docker #cloud
+Jatin Sharma profile image
+Revue Getting Shut down
+#discuss #news #twitter #webdev
+Ben Halpern profile image
+Meme Monday 🎉
+#jokes #discuss #watercooler
+
+service_name=app_server
+nginx_container_name=nginx
+
+reload_nginx() {  
+  docker exec $nginx_container_name /usr/sbin/nginx -s reload  
+}
+
+# server health check
+server_status() {
+  # $1 = first func arg
+  local port=$1
+  local status=$(curl -is --connect-timeout 5 --show-error http://localhost:$port | head -n 1 | cut -d " " -f2)
+
+  # if status is not a status code (123), means we got an error not an http header
+  # this could be a timeout message, connection refused error msg, and so on...
+  if [[ $(echo ${#status}) != 3 ]]; then
+    echo "503"
+  fi
+
+  echo $status
+}
+
+update_server() {
+
+  old_container_id=$(docker ps -f name=$service_name -q | tail -n1)
+
+  # create a new instance of the server
+  docker-compose up --build -d --no-deps --scale $service_name=2 --no-recreate $service_name
+  new_container_id=$(docker ps -f name=$service_name -q | head -n1)
+
+  if [[ -z $new_container_id ]]; then
+    echo "ID NOT FOUND, QUIT !"
+    exit
+  fi
+  new_container_port=$(docker port $new_container_id | cut -d " " -f3 | cut -d ":" -f2)
+
+  if [[ -z $new_container_port ]]; then
+    echo "PORT NOT FOUND, QUIT !"
+    exit
+  fi
+
+  # sleep until server is up
+  while [[ $(server_status $new_container_port) > "404" ]]; do
+    echo "New instance is getting ready..."
+    sleep 3
+  done
+
+  # ---- server is up ---
+
+  # reload nginx, so it can recognize the new instance
+  reload_nginx
+
+  # remove old instance 
+  docker rm $old_container_id -f
+
+  # reload ngnix, so it stops routing requests to the old instance
+  reload_nginx
+
+  echo "DONE !"
+}
+
+# call func
+update_server
+
