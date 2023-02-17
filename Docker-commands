@@ -1,0 +1,5 @@
+Docker command to create image of a running container 
+
+docker commit <running container name> <tag you want to give to image>
+
+docker commit nginx_base ravis2470/nginx:1
