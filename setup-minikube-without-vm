@@ -1,0 +1,13 @@
+before setting up minikube you need to install docker and run docker as normal user 
+
+to use docker as normal user run these commands after installing docker 
+
+sudo groupadd docker
+
+sudo usermod -aG docker $USER
+
+
+after this you can setup minikube from following link:
+
+
+https://www.linuxtechi.com/how-to-install-minikube-on-ubuntu/
