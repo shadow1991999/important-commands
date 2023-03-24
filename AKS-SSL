@@ -1,0 +1,6 @@
+kubectl create ns cet-manager
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f cert-issuer-nginx-ingress.yaml
+kubectl apply -f certificate.yaml
+kubectl apply -f ingress.yaml

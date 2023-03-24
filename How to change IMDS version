@@ -1,0 +1,74 @@
+To Check metadata with IMDSv1 run this command in CLI
+
+curl http://169.254.169.254/latest/meta-data/
+
+
+
+To Check IMDS vesion . Go to cloudshell and run command
+
+aws ec2 describe-instances --instance-ids (instanceID) 
+
+Output 
+
+ "MetadataOptions": {
+                        "State": "applied",
+                        "HttpTokens": "optional",      # if HttpTokens is optional it means it has IMDSv1
+                        "HttpPutResponseHopLimit": 1,
+                        "HttpEndpoint": "enabled",
+                        "HttpProtocolIpv6": "disabled",
+                        "InstanceMetadataTags": "disabled" 
+                     }   
+                        
+  To change IMDS vesion IMDSv1 to IMDSv2.Run this command in Cloudshell
+                        
+
+aws ec2 modify-instance-metadata-options --instance-id (instanceID) --http-tokens required --http-endpoint enabled
+
+aws ec2 modify-instance-metadata-options --instance-id (instanceID) --http-tokens required --http-endpoint enabled --http-put-response-hop-limit 1
+
+After that if you check instance metadata in cloudshell with command
+
+aws ec2 describe-instances --instance-ids (instanceID) 
+
+Output 
+
+      "MetadataOptions": {
+                        "State": "applied",
+                        "HttpTokens": "required",       # HttpTokens : required means you have IMDSv2 and a token will be 
+                        "HttpPutResponseHopLimit": 1,     required to check the metadata
+                        "HttpEndpoint": "enabled",
+                        "HttpProtocolIpv6": "disabled",
+                        "InstanceMetadataTags": "disabled"
+                    },
+
+
+
+To generate token run command in CLI
+
+TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` \
+&& curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/
+
+To check Metadata 
+
+TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` \
+&& curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/(data you want to check)
+
+Example if you want to check ami-id of your EC2 
+
+TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` \
+&& curl -H "X-aws-ec2-metadata-token: $TOKEN" -v http://169.254.169.254/latest/meta-data/ami-id
+
+
+If you want to disable metadata you can run this command 
+
+
+aws ec2 modify-instance-metadata-options --instance-id (instanceID) --http-tokens required --http-endpoint disable
+
+
+
+
+
+
+
+
+
