@@ -1,4 +1,4 @@
 az network public-ip create --resource-group DigiDoc --name MyPublicIP --allocation-method Static --sku Standard
-4.213.64.73
+
 
 az network public-ip show --resource-group DigiDoc --name MyPublicIP --query ipAddress --output tsv
