@@ -1,0 +1,10 @@
+<Location "/server-status">
+    SetHandler server-status
+    Require all granted
+</Location>
+
+
+
+#### Add above lines in httpd.conf file
+path /usr/local/apache2/conf 
+####
