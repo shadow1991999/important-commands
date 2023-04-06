@@ -1,0 +1,51 @@
+#### Headless service grafana
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-headless
+  labels:
+    app: grafana
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  selector:
+    app: grafana
+
+
+#### Headless deployment of grafana
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: grafana-statefulset
+spec:
+  replicas: 3
+  serviceName: grafana-headless
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+  volumeClaimTemplates:
+    - metadata:
+        name: grafana-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+
